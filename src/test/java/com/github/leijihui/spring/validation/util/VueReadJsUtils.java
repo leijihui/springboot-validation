@@ -30,29 +30,46 @@ public class VueReadJsUtils {
         apiJsVO.setConstName(constName.substring(constName.indexOf("const") + 5, constName.indexOf("=")).trim());
         List<ApiInfoVO> infoVOS = new ArrayList<>();
         lineList.stream()
-                .filter(line -> line.indexOf(":") > 0)
+                .filter(line -> line.indexOf(":") > 0 && !line.trim().startsWith("//"))
                 .forEach(line -> {
                     //  getById: '/isys/inst/get/', // 根据机构ID获取机构信息
                     //    todayNum: "/iwkb/gtasks/todayNum",                                  //首页今日新增
                     log.info(line);
                     String apiConst = line.substring(0, line.indexOf(":")).trim();
                     String apiUri = null;
+                    String apiGroupId = "";//API组编号（ServiceId）
+                    String httpMethod = "POST";//请求类型
                     if (line.indexOf("'") > 0) {
                         apiUri = line.substring(line.indexOf("'") + 1, line.lastIndexOf("'")).trim();
+                        String[] splitArr = apiUri.split("/");
+                        apiGroupId = splitArr[1];
+
+                        if (apiUri.endsWith("/")) {
+                            httpMethod = "GET";
+                        }
                     }
                     if (line.indexOf("\"") > 0) {
                         apiUri = line.substring(line.indexOf("\"") + 1, line.lastIndexOf("\"")).trim();
+                        String[] splitArr = apiUri.split("/");
+                        apiGroupId = splitArr[1];
+
+                        if (apiUri.endsWith("/")) {
+                            httpMethod = "GET";
+                        }
                     }
                     String apiName = "";
                     if (line.lastIndexOf("//") > 0) {
                         apiName = line.substring(line.lastIndexOf("//")).trim().replaceAll("//", "");
                     }
+
                     ApiInfoVO apiInfoVO = ApiInfoVO
                             .builder()
                             .apiConst(apiConst)
                             .apiName(apiName)
                             .apiDesc(apiName)
                             .apiUri(apiUri)
+                            .apiGroupId(apiGroupId)
+                            .httpMethod(httpMethod)
                             .build();
                     log.info(apiInfoVO.toString());
                     infoVOS.add(apiInfoVO);
