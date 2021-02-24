@@ -1,5 +1,6 @@
 package com.github.leijihui.spring.validation.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.leijihui.spring.validation.base.Result;
 import com.github.leijihui.spring.validation.base.validation.ValidationList;
 import com.github.leijihui.spring.validation.config.ValidParamConst;
@@ -10,6 +11,7 @@ import io.swagger.annotations.ApiParam;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +19,9 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -62,6 +67,39 @@ public class UserController {
     @PostMapping("/saveList")
     public Result saveList(@RequestBody @Validated(UserDTO.Save.class) ValidationList<UserDTO> userList) {
         // 校验通过，才会执行业务逻辑处理
+        return Result.ok();
+    }
+
+    @ApiOperation(value = "用户校验测试接口->编程式校验->保存集合", notes = "用户校验测试接口->编程式校验合->保存集合")
+    @PostMapping("/saveListWithCodingValidate")
+    public Result saveListWithCodingValidate(@RequestBody String requestBody) {
+        // 校验通过，才会执行业务逻辑处理
+        ObjectMapper mapper = new ObjectMapper();
+        List<UserDTO> userDTOList = null;
+        try {
+            userDTOList = Arrays.asList(mapper.readValue(requestBody, UserDTO[].class));
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("json格式错误");
+        }
+        if (CollectionUtils.isEmpty(userDTOList)) {
+            throw new RuntimeException("集合长度为0");
+        }
+        ValidationList<UserDTO> userList = new ValidationList<UserDTO>();
+        userDTOList.forEach(item -> {
+            userList.add(item);
+        });
+        Set<ConstraintViolation<ValidationList<UserDTO>>> validate = globalValidator.validate(userList, UserDTO.Save.class);
+        // 如果校验通过，validate为空；否则，validate包含未校验通过项
+        if (validate.isEmpty()) {
+            // 校验通过，才会执行业务逻辑处理
+
+        } else {
+            for (ConstraintViolation<ValidationList<UserDTO>> userDTOConstraintViolation : validate) {
+                // 校验失败，做其它逻辑
+                System.out.println(userDTOConstraintViolation);
+            }
+        }
         return Result.ok();
     }
 
